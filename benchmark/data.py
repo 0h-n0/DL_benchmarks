@@ -25,10 +25,13 @@ class Iterator(object):
             dims = np.prod(self.image_shape)
             data = np.random.random(dims * self.batch_size)
             data = data.reshape(self.batch_size, *self.image_shape)
+            ### data dimension = [batch, channel, width, height]
+            target = np.arange(self.batch_size)
+            
         elif self.data_type == 'sequence':
-            data = np.random.random()            
-        
-        return data
+            data = np.random.random()
+            
+        return (data, target)
 
     def __len__(self):
         return self.niteration

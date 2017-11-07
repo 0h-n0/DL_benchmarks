@@ -22,11 +22,6 @@ git clone --recursive https://github.com/gluon-api/gluon-api.git
 #git clone --recursive https://github.com/cupy/cupy.git
 wget http://bitbucket.org/eigen/eigen/get/3.3.4.tar.bz2
 
-
-export CFLAGS=-I/home/kono/Softwares-ks/venv-1080ti/Downloads/pytorch/torch/lib/build/nccl/include
-export LDFLAGS=-L/home/kono/Softwares-ks/venv-1080ti/Downloads/pytorch/torch/lib/build/nccl/lib
-export LD_LIBRARY_PATH=/home/kono/Softwares-ks/venv-1080ti/Downloads/pytorch/torch/lib/build/nccl/lib:$LD_LIBRARY_PATH
-
 pip install mxnet-cu80==0.11.0
 pip install tensorflow-gpu
 pip install https://cntk.ai/PythonWheel/GPU/cntk-2.2-cp36-cp36m-linux_x86_64.whl

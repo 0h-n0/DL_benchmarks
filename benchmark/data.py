@@ -1,3 +1,5 @@
+import numpy as np
+
 class Iterator(object):
     def __init__(self, data_type, image_shape, sequence_shape, niteration,
                  batch_size, label_size):
@@ -7,15 +9,26 @@ class Iterator(object):
         self.niteration = niteration
         self.batch_size = batch_size
         self.label_size = label_size
+        self.target_type = 'one-hot'
         self._i = 0
         
     def __iter__(self):
         return self
     
-    def next(self):
-        if self._i == len(self.niteration):
+    def __next__(self):
+        if self._i == self.niteration:
             raise StopIteration()
         self._i += 1
-        value = 1
         
-        return value
+        if self.data_type == 'image':
+            ### data dimension = [batch, channel, width, height]
+            dims = np.prod(self.image_shape)
+            data = np.random.random(dims * self.batch_size)
+            data = data.reshape(self.batch_size, *self.image_shape)
+        elif self.data_type == 'sequence':
+            data = np.random.random()            
+        
+        return data
+
+    def __len__(self):
+        return self.niteration

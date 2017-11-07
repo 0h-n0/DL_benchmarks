@@ -96,8 +96,7 @@ def get_model(_config, framework, framework_version):
 
 @ex.capture
 def train(model, iterator):
-    model.setup()
-    results = model.run(iterator)
+    results = model.train(iterator)
     dump_results(results=results)
 
 

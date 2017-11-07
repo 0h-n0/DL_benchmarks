@@ -3,12 +3,12 @@ import torch.nn as nn
 
 
 class AbstractDNNClass(nn.Module):
-    def set_optimizer():
+    def set_optimizer(self):
         pass
     
-    def train(iterator):
+    def train(self, iterator):
         for i in iterator:
-            print(i)
+            print(i.shape)
 
 class CNN(AbstractDNNClass):
     def __init__(self, channel, xdim, ydim, output_num):

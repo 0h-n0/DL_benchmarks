@@ -24,7 +24,7 @@ class AbstractDNNClass(nn.Module):
             super(AbstractDNNClass, self).train()
         else:
             self.eval()
-
+            
         report = dict()
         
         for idx, (x, t) in enumerate(iterator):
@@ -34,7 +34,7 @@ class AbstractDNNClass(nn.Module):
             if self.gpu_mode:
                 x = x.cuda()
                 t = t.cuda()
-            x, t = Variable(x, requires_grad=True), Variable(t)
+            x, t = Variable(x), Variable(t)
             forward_s = time.perf_counter()
             o = self(x)
             forward_e = time.perf_counter()

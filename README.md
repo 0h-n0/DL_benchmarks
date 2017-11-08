@@ -1,20 +1,25 @@
 # DL_benchmarks WIP !!!
 
-DL_benchmarks surveys simple benchmark on DeepLearning frameworks with dummy data.
+DL_benchmarks surveys speed of each DeepLearning frameworks with dummy data.
 So, Using dummy data, accuracy of results can not be compared. 
 
-#### Supported DeepLearning Frameworks.
+### Supported DeepLearning Frameworks.
 
 * tensorflow
+* tensorflow(Eagar)
+* tensorflow(Keras)
 * pytorch
 * chainer
 * mxnet
+* mxnet(gluon)
 * cntk
+* cntk(Keras)
+* caffe(keras)
 * caffe2
 * neon
 * tiny-net
 * nnabla
-* mxnet(gluon)
+* dynet
 
 #### Requirements.
 

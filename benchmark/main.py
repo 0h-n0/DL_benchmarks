@@ -53,7 +53,9 @@ def config():
     assert framework in ['torch', 'mxnet', 'chainer', 'caffe2',
                          'cntk', 'tensorflow', 'dynet', 'nnabla', 'neon'], \
                          "Your framework[{}] is not supported.\n".format(framework) 
-
+    if framework == "torch":
+        import torch
+        _framework_version = torch.__version__
 
 @ex.capture
 def get_iterator(data_type, data_config, progressbar):

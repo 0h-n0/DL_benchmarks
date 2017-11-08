@@ -43,7 +43,13 @@ def config():
         lr = 0.01,
         momentum = 0.9
         )
-        
+
+    torch_conf = dict(
+        cnn_paralell=True,
+        benchmark=True
+        )
+
+    
     assert dnn_arch in ['CNN', 'DNN', 'RNN', 'LSTM',
                          'BLSTM', 'GRU', 'AlexNet', 'ResNet', 'VGG16'], \
                          "Your dnn_arch[{}] is not supported.\n".format(dnn_arch) 
@@ -90,7 +96,7 @@ def get_model(module, data_type, data_config, dnn_arch, rnn_layers, ngpu):
         output_num = data_config['label_size']
         gpu_mode = True if ngpu >= 1 else False
         if dnn_arch == 'CNN':
-            model = module.CNN(channel, xdim, ydim, output_num, gpu_mode)
+            model = module.CNN(channel, xdim, ydim, output_num)
     elif data_type == "sequence":
         pass
     return model
@@ -115,8 +121,8 @@ def get_trainer(_config, framework, framework_version, ngpu):
         trainer = _get_trainer(module=module, model=model)        
     elif framework == 'chainer':
         module = import_module('benchmark.models.ch')
+        model = get_model(module=module)        
         trainer = _get_trainer(module=module, model=model)        
-        model = get_model(module=module)
     elif framework == 'tensorflow':
         module = import_module('benchmark.models.th')
         model = get_model(module=module)

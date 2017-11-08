@@ -17,6 +17,8 @@ class Trainer(object):
             self.model.cuda()
             gpus = [i for i in range(self.ngpu)]
             self.model = torch.nn.DataParallel(model, device_ids=gpus)
+        torch.backends.cudnn.benchmark = True
+
             
     def set_optimizer(self, opt_type, opt_conf):
         if opt_type == 'SGD':
@@ -30,13 +32,7 @@ class Trainer(object):
             raise NotImplementedError
         
     def run(self, iterator, mode='train'):
-        if mode == 'train':
-            self.model.train()
-        else:
-            self.model.eval()
-            
         report = dict()
-        
         for idx, (x, t) in enumerate(iterator):
             total_s = time.perf_counter()            
             x = torch.FloatTensor(x)
@@ -65,8 +61,7 @@ class Trainer(object):
     
             
 class CNN(nn.Module):
-    def __init__(self, channel, xdim, ydim, output_num, gpu_mode):
-        self.gpu_mode = gpu_mode
+    def __init__(self, channel, xdim, ydim, output_num):
         super(CNN, self).__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(channel, 180, (xdim, 3), stride=1),

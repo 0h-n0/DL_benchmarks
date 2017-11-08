@@ -21,7 +21,7 @@ def config():
 
     """
     project_root = str(project_root)
-    ngpu = 0 ### ngpu = 0 corresponds to cpu-mode
+    ngpu = 1 ### ngpu = 0 corresponds to cpu-mode
     data_type = 'image'
 
     assert data_type in ['image', 'sequence'], \
@@ -52,10 +52,27 @@ def config():
     framework_version = None
     assert framework in ['torch', 'mxnet', 'chainer', 'caffe2',
                          'cntk', 'tensorflow', 'dynet', 'nnabla', 'neon'], \
-                         "Your framework[{}] is not supported.\n".format(framework) 
-    if framework == "torch":
-        import torch
-        _framework_version = torch.__version__
+                         "Your framework[{}] is not supported.\n".format(framework)
+    package_name_list = [i.project_name for i in
+                         get_installed_distributions(local_only=True)]
+    package_version_list = [i.version for i in
+                            get_installed_distributions(local_only=True)]
+    if framework == 'torch':    
+        idx = package_name_list.index(framework)
+    elif framework == 'torch':
+        idx = package_name_list.index('mxnet-cu80')
+        package_name = 'mxnet-cu80'
+    elif framework == 'chainer':
+        idx = package_name_list.index('chainer')
+    elif framework == 'tensorflow':
+        idx = package_name_list.index('tensorflow-gpu')
+        package_name = 'tensorflow-gpu'        
+    else:
+        raise ValueError            
+    framework_version = package_version_list[idx]
+
+    del package_name_list
+    del package_version_list
 
 @ex.capture
 def get_iterator(data_type, data_config, progressbar):
@@ -67,7 +84,7 @@ def get_iterator(data_type, data_config, progressbar):
 
 
 @ex.capture
-def get_model(module, data_type, data_config, dnn_arch, rnn_layers):
+def get_model(module, data_type, data_config, dnn_arch, rnn_layers, ngpu):
     if data_type == 'image':
         channel, xdim, ydim = data_config['image_shape']
         output_num = data_config['label_size']
@@ -80,46 +97,40 @@ def get_model(module, data_type, data_config, dnn_arch, rnn_layers):
 
 
 @ex.capture
-def get_trainer(module, model, ngpu):
+def _get_trainer(module, model, ngpu):
     trainer = module.Trainer(model, ngpu)
     return trainer
 
 
 @ex.capture
 def get_trainer(_config, framework, framework_version, ngpu):
-    package_name_list = [i.project_name for i in
-                         get_installed_distributions(local_only=True)]
-    package_version_list = [i.version for i in
-                            get_installed_distributions(local_only=True)]
     model = None
     if framework == 'torch':
-        import torch
-        idx = package_name_list.index('torch')
         module = import_module('benchmark.models.th') 
         model = get_model(module=module)
-        trainer = get_trainer(module=module, model=model)
+        trainer = _get_trainer(module=module, model=model)
     elif framework == 'mxnet':
-        idx = package_name_list.index('mxnet-cu80')
         module = import_module('benchmark.models.mx')
         model = get_model(module=module)
+        trainer = _get_trainer(module=module, model=model)        
     elif framework == 'chainer':
-        idx = package_name_list.index('chainer')
         module = import_module('benchmark.models.ch')
+        trainer = _get_trainer(module=module, model=model)        
         model = get_model(module=module)
     elif framework == 'tensorflow':
-        idx = package_name_list.index('tensorflow-gpu')
         module = import_module('benchmark.models.th')
         model = get_model(module=module)
+        trainer = _get_trainer(module=module, model=model)        
     else:
         raise ValueError
-    _config["framework_version"] = package_version_list[idx]
+
     return trainer
 
 
 @ex.capture
 def train(trainer, iterator, opt_type, opt_conf):
     trainer.set_optimizer(opt_type, opt_conf)            
-    results = trainer.train(iterator)
+    results = trainer.run(iterator)
     dump_results(results=results)
 
 

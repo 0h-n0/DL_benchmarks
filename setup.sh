@@ -3,6 +3,9 @@ mkdir venv
 
 virtualenv -p python3 venv
 
+#install minicodna
+wget  https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+
 source venv/bin/activate
 
 pip list

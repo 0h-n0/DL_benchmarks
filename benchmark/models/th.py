@@ -7,23 +7,33 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from tqdm import tqdm
 
-class AbstractDNNClass(nn.Module):
+
+class Trainer(object):
+    def __init__(self, model, ngpu):
+        self.model = model
+        self.ngpu = ngpu
+        self.gpu_mode = True if ngpu >= 1 else False
+        if self.gpu_mode:
+            self.model.cuda()
+            gpus = [i for i in range(self.ngpu)]
+            self.model = torch.nn.DataParallel(model, device_ids=gpus)
+            
     def set_optimizer(self, opt_type, opt_conf):
         if opt_type == 'SGD':
-            self.optimizer = optim.SGD(self.parameters(),
+            self.optimizer = optim.SGD(self.model.parameters(),
                                        lr=opt_conf['lr'],
                                        momentum=opt_conf['momentum'])
         elif opt_type == 'Adam':
-            self.optimizer = optim.Adam(self.parameters(),
+            self.optimizer = optim.Adam(self.model.parameters(),
                                         lr=opt_conf['lr'])
         else:
             raise NotImplementedError
-
-    def train(self, iterator, mode='train'):
+        
+    def run(self, iterator, mode='train'):
         if mode == 'train':
-            super(AbstractDNNClass, self).train()
+            self.model.train()
         else:
-            self.eval()
+            self.model.eval()
             
         report = dict()
         
@@ -36,7 +46,7 @@ class AbstractDNNClass(nn.Module):
                 t = t.cuda()
             x, t = Variable(x), Variable(t)
             forward_s = time.perf_counter()
-            o = self(x)
+            o = self.model(x)
             forward_e = time.perf_counter()
             
             self.optimizer.zero_grad()
@@ -52,8 +62,9 @@ class AbstractDNNClass(nn.Module):
                 total=total_e - total_s
             )
         return report
+    
             
-class CNN(AbstractDNNClass):
+class CNN(nn.Module):
     def __init__(self, channel, xdim, ydim, output_num, gpu_mode):
         self.gpu_mode = gpu_mode
         super(CNN, self).__init__()
@@ -83,4 +94,4 @@ class CNN(AbstractDNNClass):
         h = self.conv(x)
         h = h.view(len(h), -1)
         return self.fc(h)
-
+ 

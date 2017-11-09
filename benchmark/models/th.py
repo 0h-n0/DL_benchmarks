@@ -1,5 +1,5 @@
 import time
-
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -9,16 +9,17 @@ from tqdm import tqdm
 
 
 class Trainer(object):
-    def __init__(self, model, ngpu):
+    def __init__(self, model, ngpu, options=None):
         self.model = model
         self.ngpu = ngpu
         self.gpu_mode = True if ngpu >= 1 else False
         if self.gpu_mode:
-            self.model.cuda()
             gpus = [i for i in range(self.ngpu)]
             self.model = torch.nn.DataParallel(model, device_ids=gpus)
-        torch.backends.cudnn.benchmark = True
+            self.model.cuda()
 
+        if options['benchmark_mode']:
+            torch.backends.cudnn.benchmark = True
             
     def set_optimizer(self, opt_type, opt_conf):
         if opt_type == 'SGD':
@@ -33,6 +34,7 @@ class Trainer(object):
         
     def run(self, iterator, mode='train'):
         report = dict()
+        criterion = torch.nn.CrossEntropyLoss().cuda()
         for idx, (x, t) in enumerate(iterator):
             total_s = time.perf_counter()            
             x = torch.FloatTensor(x)
@@ -42,11 +44,10 @@ class Trainer(object):
                 t = t.cuda()
             x, t = Variable(x), Variable(t)
             forward_s = time.perf_counter()
-            o = self.model(x)
+            x = self.model(x)
             forward_e = time.perf_counter()
-            
             self.optimizer.zero_grad()
-            loss = F.cross_entropy(o, t)
+            loss = criterion(x, t)
             backward_s = time.perf_counter()
             loss.backward()
             backward_e = time.perf_counter()            
@@ -90,3 +91,4 @@ class CNN(nn.Module):
         h = h.view(len(h), -1)
         return self.fc(h)
  
+    

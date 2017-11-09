@@ -34,6 +34,7 @@ def config():
         niteration = 1000,
         batch_size = batch_size,
         label_size = 3000,
+        target_type = None
     )
     progressbar = True
     framework = 'torch'
@@ -45,11 +46,10 @@ def config():
         momentum = 0.9
         )
 
-    torch_conf = dict(
-        cnn_paralell=True,
-        benchmark=True
+    trainer_options = dict(
+        benchmark_mode=True
         )
-
+    
     
     assert dnn_arch in ['CNN', 'DNN', 'RNN', 'LSTM',
                          'BLSTM', 'GRU', 'AlexNet', 'ResNet', 'VGG16'], \
@@ -104,8 +104,8 @@ def get_model(module, data_type, data_config, dnn_arch, rnn_layers, ngpu):
 
 
 @ex.capture
-def _get_trainer(module, model, ngpu):
-    trainer = module.Trainer(model, ngpu)
+def _get_trainer(module, model, ngpu, trainer_options):
+    trainer = module.Trainer(model, ngpu, trainer_options)
     return trainer
 
 

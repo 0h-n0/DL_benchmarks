@@ -64,11 +64,18 @@ def config():
                          get_installed_distributions(local_only=True)]
     package_version_list = [i.version for i in
                             get_installed_distributions(local_only=True)]
+
+    
     if framework == 'torch':    
         idx = package_name_list.index(framework)
-    elif framework == 'torch':
+    elif framework == 'mxnet':
         idx = package_name_list.index('mxnet-cu80')
         package_name = 'mxnet-cu80'
+        trainer_options['progressbar'] = False
+        if progressbar:
+            assert progressbar, "turn off progressbar."
+        else:
+            trainer_options['progressbar'] = True
     elif framework == 'chainer':
         idx = package_name_list.index('chainer')
     elif framework == 'tensorflow':

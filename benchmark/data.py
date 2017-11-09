@@ -21,11 +21,11 @@ class Iterator(object):
         self._i += 1
         
         if self.data_type == 'image':
-            ### data dimension = [batch, channel, width, height]
+            ### data dimension = [batch, channel, height, width]
             dims = np.prod(self.image_shape)
             data = np.random.random(dims * self.batch_size)
             data = data.reshape(self.batch_size, *self.image_shape)
-            ### data dimension = [batch, channel, width, height]
+            ### target dimension = [batch]
             _target = np.random.randint(self.label_size, size=self.batch_size)
             if self.target_type == 'one-hot':
                 target = np.zeros((self.batch_size, self.label_size))

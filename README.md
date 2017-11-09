@@ -13,13 +13,15 @@ So, Using dummy data, accuracy of results can not be compared.
 * mxnet
 * mxnet(gluon)
 * cntk
-* cntk(Keras)
+* cntk(keras)
+* cntk(gluon?)
 * caffe(keras)
 * caffe2(python2...)
 * neon
 * tiny-net
 * nnabla
 * dynet
+* theano(keras)
 
 #### Requirements.
 
@@ -47,6 +49,7 @@ $ pip install tensorflow-gpu
 $ git clone --recursive https://github.com/NervanaSystems/neon.git
 $ (cd neon && make sysinstall)
 $ pip install chainer cupy
+$ conda install -c conda-forge keras 
 ```
 
 See setup.sh.

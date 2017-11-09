@@ -4,7 +4,8 @@ import numpy as np
 import chainer
 import chainer.functions as F
 import chainer.links as L
-from chainer import Chain, ChainList, Link
+from chainer import Chain
+
 
 class Trainer(object):
     def __init__(self, model, ngpu, options=None):
@@ -56,11 +57,14 @@ class Trainer(object):
             loss = [F.softmax_cross_entropy(_o, _t) for _o, _t in zip(o, t)]
             backward_s = time.perf_counter()
             self.optimizer.target.cleargrads()
-            [ ( _loss /self.ngpu).backward() for _model, _loss in zip(self.model, loss)]
+            
+            [(_loss / self.ngpu).backward()
+             for _model, _loss in zip(self.model, loss)]
+            
             backward_e = time.perf_counter()
-            [ self.model[0].addgrads(_model) for _model in self.model]
+            [self.model[0].addgrads(_model) for _model in self.model]
             self.optimizer.update()
-            [ _model.copyparams(self.model[0]) for _model in self.model]            
+            [_model.copyparams(self.model[0]) for _model in self.model]            
             total_e = time.perf_counter()
             report[idx] = dict(
                 forward=forward_e - forward_s,
@@ -76,11 +80,13 @@ class Convblock(Chain):
         super(Convblock, self).__init__()
         with self.init_scope():
             self.conv = L.Convolution2D(in_ch, out_ch, kernel, stride=stride)
+            
     def __call__(self, x):
         if self.pooling:
             return F.max_pooling_2d(F.relu(self.conv(x)), (1, 2), stride=2)
         else:
-             return F.relu(self.conv(x))            
+            return F.relu(self.conv(x))            
+
 
 class CNN(Chain):
     def __init__(self, channel, xdim, ydim, output_num):

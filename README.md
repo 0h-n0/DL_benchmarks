@@ -33,7 +33,7 @@ I highly recommend you to use 'miniconda'.
 $ wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 $ # for linux
 $ sh Miniconda3-latest-Linux-x86_64.sh
-$ conda create benchmark
+$ conda create -m benchmark pip
 $ source activate benchmark
 ```
 

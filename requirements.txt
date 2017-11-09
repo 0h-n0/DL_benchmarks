@@ -1,4 +1,10 @@
-PyYAML>=3.12
-numpy>=1.13.1
-scipy>=1.0.0
-tqdm>=4.8.4
+PyYAML
+numpy
+scipy
+tqdm
+sacred
+mxnet-cu80
+tensorflow-gpu
+chainer
+cupy
+https://cntk.ai/PythonWheel/GPU/cntk-2.2-cp36-cp36m-linux_x86_64.whl

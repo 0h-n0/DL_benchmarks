@@ -26,12 +26,13 @@ def config():
 
     assert data_type in ['image', 'sequence'], \
         "Your data_type[{}] is not supported.".format(data_type)
-    
+
+    batch_size = 10
     data_config = dict(
         image_shape = (3, 28, 28), # (channel, witdth, height)
         sequence_shape = 28, # feature
-        niteration = 10,
-        batch_size = 10,
+        niteration = 1000,
+        batch_size = batch_size,
         label_size = 3000,
     )
     progressbar = True

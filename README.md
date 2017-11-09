@@ -41,6 +41,7 @@ $ source activate benchmark
 ```
 $ conda install pytorch torchvision cuda80 -c soumith
 $ pip install mxnet-cu80
+$ # conda install -c pjmtdw mxnet-cudnn (cudnn-5~)
 $ pip install https://cntk.ai/PythonWheel/GPU/cntk-2.2-cp36-cp36m-linux_x86_64.whl
 $ pip install tensorflow-gpu
 $ git clone --recursive https://github.com/NervanaSystems/neon.git

@@ -49,7 +49,9 @@ $ pip install tensorflow-gpu
 $ git clone --recursive https://github.com/NervanaSystems/neon.git
 $ (cd neon && make sysinstall)
 $ pip install chainer cupy
-$ conda install -c conda-forge keras 
+$ conda install -c conda-forge keras
+$ pip install cntk
+$ conda install -c mpi4py openmpi 
 ```
 
 See setup.sh.

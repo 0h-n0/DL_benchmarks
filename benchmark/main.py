@@ -78,6 +78,13 @@ def config():
             trainer_options['progressbar'] = True
     elif framework == 'chainer':
         idx = package_name_list.index('chainer')
+    elif framework == 'cntk':
+        idx = package_name_list.index('cntk')
+        trainer_options['progressbar'] = False
+        if progressbar:
+            assert progressbar, "turn off progressbar."
+        else:
+            trainer_options['progressbar'] = True
     elif framework == 'tensorflow':
         idx = package_name_list.index('tensorflow-gpu')
         package_name = 'tensorflow-gpu'        
@@ -129,6 +136,10 @@ def get_trainer(_config, framework, framework_version, ngpu):
         trainer = _get_trainer(module=module, model=model)        
     elif framework == 'chainer':
         module = import_module('benchmark.models.ch')
+        model = get_model(module=module)        
+        trainer = _get_trainer(module=module, model=model)
+    elif framework == 'cntk':
+        module = import_module('benchmark.models.ct')
         model = get_model(module=module)        
         trainer = _get_trainer(module=module, model=model)        
     elif framework == 'tensorflow':

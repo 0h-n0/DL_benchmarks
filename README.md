@@ -27,7 +27,8 @@ See requirements.txt.
 
 ### Setup.
 
-I highly recommend you to use 'miniconda'.
+I highly recommend using 'miniconda'. It is very easy to install a lot of DL frameworks with it.
+Without 'miniconda', you must spend a lot of time to install them.
 
 ```bash
 $ wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh

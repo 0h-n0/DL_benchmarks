@@ -103,7 +103,7 @@ def cnn(x, channel, xdim, ydim, output_num):
     net = mx.sym.Activation(data=net, act_type='relu')        
     net = mx.sym.Pooling(data=net, pool_type='max', kernel=(1, 2), stride=(2, 2))
     net = mx.sym.Convolution(data=net, kernel=(1, 3), num_filter=180)
-    net = mx.sym.Activation(data=net, act_tyPe='relu')        
+    net = mx.sym.Activation(data=net, act_type='relu')        
     net = mx.sym.Convolution(data=net, kernel=(1, 3), num_filter=180)
     net = mx.sym.Activation(data=net, act_type='relu')        
     net = mx.sym.Pooling(data=net, pool_type='max', kernel=(1, 2), stride=(2, 2))

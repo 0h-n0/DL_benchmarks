@@ -56,8 +56,8 @@ class Trainer(object):
             forward_e = time.perf_counter()
             loss = [F.softmax_cross_entropy(_o, _t) for _o, _t in zip(o, t)]
             backward_s = time.perf_counter()
-            self.optimizer.target.cleargrads()
-            
+            #self.optimizer.target.cleargrads()
+            [_model.cleargrads() for _model in self.model]                        
             [(_loss / self.ngpu).backward()
              for _model, _loss in zip(self.model, loss)]
             

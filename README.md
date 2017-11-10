@@ -42,6 +42,10 @@ $ source activate benchmark
 
 ```
 $ conda install pytorch torchvision cuda80 -c soumith
+$ # Your GPU is grater than 1080ti.
+$ # You should install pytorch from source.
+$ # conda install -c anaconda cmake
+$ # conda install -c conda-forge bzip2
 $ pip install mxnet-cu80
 $ # conda install -c pjmtdw mxnet-cudnn (cudnn-5~)
 $ pip install https://cntk.ai/PythonWheel/GPU/cntk-2.2-cp36-cp36m-linux_x86_64.whl
@@ -51,7 +55,7 @@ $ (cd neon && make sysinstall)
 $ pip install chainer cupy
 $ conda install -c conda-forge keras
 $ pip install cntk
-$ conda install -c mpi4py openmpi 
+$ conda install -c mpi4py openmpi
 ```
 
 See setup.sh.

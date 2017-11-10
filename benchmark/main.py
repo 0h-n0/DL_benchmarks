@@ -99,10 +99,15 @@ def config():
 def get_iterator(data_type, data_config, progressbar):
     iterator = Iterator(data_type, **data_config)
     if progressbar:
-        from tqdm import tqdm
-        iterator = tqdm(iterator)
+        iterator = wrap_tqdm(iterator)
     return iterator
 
+def wrap_tqdm(iterator):
+    from tqdm import tqdm    
+    it = iter(iterator)
+    for i in range(5):    
+        yield next(it) 
+    yield from tqdm(iterator)
 
 @ex.capture
 def get_model(module, data_type, data_config, dnn_arch, rnn_layers, ngpu):
@@ -154,6 +159,7 @@ def get_trainer(_config, framework, framework_version, ngpu):
 
 @ex.capture
 def train(trainer, iterator, opt_type, opt_conf):
+    np.random.seed(1)
     trainer.set_optimizer(opt_type, opt_conf)            
     results = trainer.run(iterator)
     dump_results(results=results)

@@ -60,6 +60,36 @@ $ conda install -c mpi4py openmpi
 
 See setup.sh.
 
+
+#### build from source
+```
+$ # pytorch
+$ conda install -c anaconda cmake
+$ conda install -c conda-forge bzip2
+$ git clone --recursive https://github.com/pytorch/pytorch.git
+$ cd pytorch; python setup.py install
+$
+$ # chainer
+$ git clone --recursive https://github.com/chainer/chainer.git
+$ git clone --recursive https://github.com/chainer/chainer.git
+$ cd chainer; python setup.py install
+$ cd cupy; python setup.py install
+$
+$ # mxnet
+$ git clone --recursive https://github.com/apache/incubator-mxnet.git
+$ conda install -c intel mkl 
+$ conda install -c intel/label/test mkl
+$ conda install -c intel/label/deprecated mkl
+$ conda install -c anaconda openblas 
+$ 
+$ $ git clone --recursive https://github.com/NervanaSystems/neon.git
+$ (cd neon && make sysinstall)
+$ pip install chainer cupy
+$ conda install -c conda-forge keras
+$ pip install cntk
+$ conda install -c mpi4py openmpi
+```
+
 #### How to use.
 
 ```bash

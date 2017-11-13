@@ -4,10 +4,12 @@ from importlib import import_module
 from pip import get_installed_distributions
 
 import numpy as np
+from tqdm import tqdm
 from sacred import Experiment
 from sacred.observers import FileStorageObserver
 
 from benchmark.data import Iterator
+
 
 ex = Experiment('benchmark')
 project_root = Path(__file__).resolve().parent.parent
@@ -47,7 +49,8 @@ def config():
         )
 
     trainer_options = dict(
-        benchmark_mode=True
+        benchmark_mode=True,
+        half=True
         )
     
     
@@ -71,7 +74,7 @@ def config():
     elif framework == 'mxnet':
         idx = package_name_list.index('mxnet-cu80')
         package_name = 'mxnet-cu80'
-        trainer_options['progressbar'] = False
+        trainer_options['progressbar'] = True
         if progressbar:
             assert progressbar, "turn off progressbar."
         else:
@@ -96,10 +99,13 @@ def config():
     del package_version_list
 
 @ex.capture
-def get_iterator(data_type, data_config, progressbar):
+def get_iterator(framework, data_type, data_config, progressbar):
     iterator = Iterator(data_type, **data_config)
     if progressbar:
-        iterator = wrap_tqdm(iterator)
+        if framework in ['mxnet']:
+            iterator = iterator
+        else:
+            iterator = wrap_tqdm(iterator)
     return iterator
 
 def wrap_tqdm(iterator):

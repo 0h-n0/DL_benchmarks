@@ -3,6 +3,7 @@ import copy
 import numpy as np
 import chainer
 import chainer.functions as F
+from chainer.function_hooks import TimerHook
 import chainer.links as L
 from chainer import Chain
 
@@ -35,42 +36,42 @@ class Trainer(object):
         
     def run(self, iterator, mode='train'):
         report = dict()
-        for idx, (x, t) in enumerate(iterator):
-            total_s = time.perf_counter()
-            if self.gpu_mode:
-                x = x.astype(np.float32)
-                t = t.astype(np.int32)
-                minibatch = len(x) // self.ngpu
-                x = [chainer.Variable(
-                     chainer.cuda.to_gpu(x[j*minibatch:(j+1)*minibatch], j))
-                     for j in range(self.ngpu)]
-                t = [chainer.Variable(
-                     chainer.cuda.to_gpu(t[j*minibatch:(j+1)*minibatch], j))
-                     for j in range(self.ngpu)]
-            else:
-                x = chainer.Variable(x.astype(np.float32))
-                t = chainer.Variable(t.astype(np.int64))
-
-            forward_s = time.perf_counter()
-            o = [_model(_x) for _model, _x in zip(self.model, x)]
-            forward_e = time.perf_counter()
-            loss = [F.softmax_cross_entropy(_o, _t) for _o, _t in zip(o, t)]
-            backward_s = time.perf_counter()
-            #self.optimizer.target.cleargrads()
-            [_model.cleargrads() for _model in self.model]                        
-            [(_loss / self.ngpu).backward()
-             for _model, _loss in zip(self.model, loss)]
+        
             
-            backward_e = time.perf_counter()
-            [self.model[0].addgrads(_model) for _model in self.model]
-            self.optimizer.update()
-            [_model.copyparams(self.model[0]) for _model in self.model]            
-            total_e = time.perf_counter()
-            report[idx] = dict(
-                forward=forward_e - forward_s,
-                backward=backward_e - backward_s,
-                total=total_e - total_s
-            )
+        total_s = time.perf_counter()
+        for idx, (x, t) in enumerate(iterator):
+            hook = TimerHook()
+            with hook:
+                if self.gpu_mode:
+                    x = x.astype(np.float32)
+                    t = t.astype(np.int32)
+                    minibatch = len(x) // self.ngpu
+                    x = [chainer.Variable(
+                        chainer.cuda.to_gpu(x[j*minibatch:(j+1)*minibatch], j))
+                         for j in range(self.ngpu)]
+                    t = [chainer.Variable(
+                        chainer.cuda.to_gpu(t[j*minibatch:(j+1)*minibatch], j))
+                         for j in range(self.ngpu)]
+                else:
+                    x = chainer.Variable(x.astype(np.float32))
+                    t = chainer.Variable(t.astype(np.int64))
+
+                o = [_model(_x) for _model, _x in zip(self.model, x)]
+                loss = [F.softmax_cross_entropy(_o, _t) for _o, _t in zip(o, t)]
+                self.optimizer.target.cleargrads()
+                [_model.cleargrads() for _model in self.model]                        
+                [(_loss / self.ngpu).backward()
+                 for _model, _loss in zip(self.model, loss)]
+            
+                [self.model[0].addgrads(_model) for _model in self.model]
+                self.optimizer.update()
+                [_model.copyparams(self.model[0]) for _model in self.model]
+            print(hook.total_time())
+            hook.print_report()
+
+        total_e = time.perf_counter()
+
+        
         return report
 
 

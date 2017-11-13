@@ -6,20 +6,28 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.autograd import Variable
 from tqdm import tqdm
-
+from chainer.function_hooks import TimerHook
 
 class Trainer(object):
     def __init__(self, model, ngpu, options=None):
         self.model = model
         self.ngpu = ngpu
         self.gpu_mode = True if ngpu >= 1 else False
-        if self.gpu_mode:
-            gpus = [i for i in range(self.ngpu)]
-            self.model = torch.nn.DataParallel(model, device_ids=gpus)
-            self.model.cuda()
-
+        self.halfmode = options['half']
+        
         if options['benchmark_mode']:
             torch.backends.cudnn.benchmark = True
+        
+        if self.gpu_mode:
+            if self.ngpu == 1:
+                self.model.cuda()
+            else:
+                gpus = [i for i in range(self.ngpu)]
+                self.model = torch.nn.DataParallel(model, device_ids=gpus)
+                self.model.cuda()
+            if self.halfmode:
+                self.model.half()
+            
             
     def set_optimizer(self, opt_type, opt_conf):
         if opt_type == 'SGD':
@@ -35,29 +43,47 @@ class Trainer(object):
     def run(self, iterator, mode='train'):
         report = dict()
         criterion = torch.nn.CrossEntropyLoss().cuda()
+        if mode == 'train':
+            self.model.train()
+        
         for idx, (x, t) in enumerate(iterator):
-            total_s = time.perf_counter()            
+            start = time.time()
             x = torch.FloatTensor(x)
             t = torch.LongTensor(t) 
             if self.gpu_mode:
-                x = x.cuda()
+                if self.ngpu == 1:
+                    x = x.cuda()
                 t = t.cuda()
+                if self.halfmode:
+                    x = x.half()
+                    
             x, t = Variable(x), Variable(t)
-            forward_s = time.perf_counter()
             x = self.model(x)
-            forward_e = time.perf_counter()
+
             self.optimizer.zero_grad()
             loss = criterion(x, t)
-            backward_s = time.perf_counter()
             loss.backward()
-            backward_e = time.perf_counter()            
             self.optimizer.step()
-            total_e = time.perf_counter()
-            report[idx] = dict(
-                forward=forward_e - forward_s,
-                backward=backward_e - backward_s,
-                total=total_e - total_s
+            print(time.time() - start)
+            if idx == 0:
+                torch.cuda.synchronize()
+                total_s = time.perf_counter()
+                len_t = len(t)
+            #total_e = time.perf_counter()
+            #report[idx] = dict(
+            #    total=total_e - total_s
+            #)
+            #iterator.set_description("total time {:10.7f}".format(total_e - total_s))
+            #print("total time {:10.7f}".format(total_e - total_s))
+        torch.cuda.synchronize()
+        total_e = time.perf_counter()
+        report = dict(
+            total=total_e - total_s,
+            perit=(total_e - total_s)/(idx),
+            timepersample=(total_e - total_s)/(idx*len_t),            
             )
+        print(report)
+            
         return report
     
             

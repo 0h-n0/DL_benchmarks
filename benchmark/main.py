@@ -30,7 +30,7 @@ def config():
         "Your data_type[{}] is not supported.".format(data_type)
 
     batch_size = 10
-    data_config = dict(
+    data_options = dict(
         image_shape = (3, 28, 28), # (channel, witdth, height)
         sequence_shape = 28, # feature
         niteration = 1000,
@@ -49,10 +49,14 @@ def config():
         )
 
     trainer_options = dict(
+        mode='train',
         benchmark_mode=True,
-        half=True
+        half=False,
         )
-    
+    time_options = 'total'
+
+    assert time_options in ['total', 'forward', 'backward'], \
+        "Your time_options[{}] is not supported.\n".format(dnn_arch) 
     
     assert dnn_arch in ['CNN', 'DNN', 'RNN', 'LSTM',
                          'BLSTM', 'GRU', 'AlexNet', 'ResNet', 'VGG16'], \
@@ -70,24 +74,14 @@ def config():
 
     
     if framework == 'torch':    
-        idx = package_name_list.index(framework)
+        idx = package_name_list.index('torch')
     elif framework == 'mxnet':
-        idx = package_name_list.index('mxnet-cu80')
-        package_name = 'mxnet-cu80'
-        trainer_options['progressbar'] = True
-        if progressbar:
-            assert progressbar, "turn off progressbar."
-        else:
-            trainer_options['progressbar'] = True
+        idx = package_name_list.index('mxnet')
+        package_name = 'mxnet'
     elif framework == 'chainer':
         idx = package_name_list.index('chainer')
     elif framework == 'cntk':
         idx = package_name_list.index('cntk')
-        trainer_options['progressbar'] = False
-        if progressbar:
-            assert progressbar, "turn off progressbar."
-        else:
-            trainer_options['progressbar'] = True
     elif framework == 'tensorflow':
         idx = package_name_list.index('tensorflow-gpu')
         package_name = 'tensorflow-gpu'        
@@ -99,27 +93,24 @@ def config():
     del package_version_list
 
 @ex.capture
-def get_iterator(framework, data_type, data_config, progressbar):
-    iterator = Iterator(data_type, **data_config)
+def get_iterator(framework, data_type, data_options, progressbar):
+    iterator = Iterator(data_type, **data_options)
     if progressbar:
-        if framework in ['mxnet']:
-            iterator = iterator
-        else:
-            iterator = wrap_tqdm(iterator)
+        iterator = tqdm(iterator)
     return iterator
 
 def wrap_tqdm(iterator):
     from tqdm import tqdm    
     it = iter(iterator)
-    for i in range(5):    
-        yield next(it) 
-    yield from tqdm(iterator)
+    #for i in range(5):    
+    #    yield next(it) 
+    #yield from tqdm(iterator)
 
 @ex.capture
-def get_model(module, data_type, data_config, dnn_arch, rnn_layers, ngpu):
+def get_model(module, data_type, data_options, dnn_arch, rnn_layers, ngpu):
     if data_type == 'image':
-        channel, xdim, ydim = data_config['image_shape']
-        output_num = data_config['label_size']
+        channel, xdim, ydim = data_options['image_shape']
+        output_num = data_options['label_size']
         gpu_mode = True if ngpu >= 1 else False
         if dnn_arch == 'CNN':
             model = module.CNN(channel, xdim, ydim, output_num)
@@ -129,8 +120,8 @@ def get_model(module, data_type, data_config, dnn_arch, rnn_layers, ngpu):
 
 
 @ex.capture
-def _get_trainer(module, model, ngpu, trainer_options):
-    trainer = module.Trainer(model, ngpu, trainer_options)
+def _get_trainer(module, model, ngpu, trainer_options, data_options, time_options):
+    trainer = module.Trainer(model, ngpu, trainer_options, data_options, time_options)
     return trainer
 
 

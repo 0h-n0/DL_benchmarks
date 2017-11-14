@@ -19,7 +19,7 @@ class Trainer(object):
             self.gpus = [mx.gpu(i) for i in range(ngpu)]
             
         if options['benchmark_mode']:
-            os.environ['MXNET_CUDNN_AUTOTUNE_DEFAULT'] = '0'
+            os.environ['MXNET_CUDNN_AUTOTUNE_DEFAULT'] = '1'
         self.progressbar = options['progressbar']
             
     def set_optimizer(self, opt_type, opt_conf):

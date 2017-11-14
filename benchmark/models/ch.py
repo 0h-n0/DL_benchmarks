@@ -37,7 +37,6 @@ class Trainer(object):
     def run(self, iterator, mode='train'):
         report = dict()
         
-            
         total_s = time.perf_counter()
         for idx, (x, t) in enumerate(iterator):
             hook = TimerHook()

@@ -1,19 +1,26 @@
 import time
+from contextlib import contextmanager
+
 import numpy as np
+from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.autograd import Variable
-from tqdm import tqdm
-from chainer.function_hooks import TimerHook
 
-class Trainer(object):
-    def __init__(self, model, ngpu, options=None):
+from benchmark.models.base_trainer import BaseTrainer
+
+
+class Trainer(BaseTrainer):
+    def __init__(self, model, ngpu, options,
+                 data_options=None, time_options=None):
         self.model = model
         self.ngpu = ngpu
         self.gpu_mode = True if ngpu >= 1 else False
         self.halfmode = options['half']
+        self.time_options = time_options
+        self._elapsed_time = 0        
         
         if options['benchmark_mode']:
             torch.backends.cudnn.benchmark = True
@@ -27,7 +34,11 @@ class Trainer(object):
                 self.model.cuda()
             if self.halfmode:
                 self.model.half()
-            
+
+        if options['mode'] == 'train':
+            self.model.train()
+        else:
+            self.model.eval()
             
     def set_optimizer(self, opt_type, opt_conf):
         if opt_type == 'SGD':
@@ -39,15 +50,18 @@ class Trainer(object):
                                         lr=opt_conf['lr'])
         else:
             raise NotImplementedError
-        
-    def run(self, iterator, mode='train'):
+
+    def run(self, iterator):
         report = dict()
         criterion = torch.nn.CrossEntropyLoss().cuda()
-        if mode == 'train':
-            self.model.train()
+        time_series = []
+        start_event = torch.cuda.Event(enable_timing=True)
+        end_event = torch.cuda.Event(enable_timing=True)
         
+        total_s = time.perf_counter()        
         for idx, (x, t) in enumerate(iterator):
-            start = time.time()
+            if self.time_options == 'total':
+                start_event.record()
             x = torch.FloatTensor(x)
             t = torch.LongTensor(t) 
             if self.gpu_mode:
@@ -56,34 +70,35 @@ class Trainer(object):
                 t = t.cuda()
                 if self.halfmode:
                     x = x.half()
-                    
             x, t = Variable(x), Variable(t)
-            x = self.model(x)
-
+            if self.time_options == 'forward':
+                with self._record(start_event, end_event):
+                    x = self.model(x)
+            else:
+                x = self.model(x)                
             self.optimizer.zero_grad()
             loss = criterion(x, t)
-            loss.backward()
+            if self.time_options == 'backward':
+                with self._record(start_event, end_event):
+                    loss.backward()
+            else:
+                loss.backward()
             self.optimizer.step()
-            print(time.time() - start)
-            if idx == 0:
+            
+            if self.time_options == 'total':
+                end_event.record()
                 torch.cuda.synchronize()
-                total_s = time.perf_counter()
-                len_t = len(t)
-            #total_e = time.perf_counter()
-            #report[idx] = dict(
-            #    total=total_e - total_s
-            #)
-            #iterator.set_description("total time {:10.7f}".format(total_e - total_s))
-            #print("total time {:10.7f}".format(total_e - total_s))
+                self._elapsed_time = start_event.elapsed_time(end_event)/1000
+            if isinstance(iterator, tqdm):
+                iterator.set_description('{:>10s} :{:10.7f}s/it'.format(self.time_options,
+                                                                        self._elapsed_time))            
+            time_series.append(self._elapsed_time)
         torch.cuda.synchronize()
         total_e = time.perf_counter()
         report = dict(
+            time_series=time_series,
             total=total_e - total_s,
-            perit=(total_e - total_s)/(idx),
-            timepersample=(total_e - total_s)/(idx*len_t),            
             )
-        print(report)
-            
         return report
     
             

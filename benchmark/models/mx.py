@@ -1,32 +1,55 @@
 """
 mxnet trainers and models
 """
-
 import os
-import time
 from functools import partial
-from collections import namedtuple
+
+import torch
 import mxnet as mx
 from tqdm import tqdm
 
-class Trainer(object):
-    def __init__(self, model, ngpu, options=None):
+from benchmark.models.base_trainer import BaseTrainer
+
+
+class Trainer(BaseTrainer):
+    def __init__(self, model, ngpu, options,
+                 data_options=None, time_options=None):
         self.model = model
         self.ngpu = ngpu
         self.gpu_mode = True if ngpu >= 1 else False
-        
+        self.time_options = time_options
         if self.gpu_mode:
             self.gpus = [mx.gpu(i) for i in range(ngpu)]
             
         if options['benchmark_mode']:
-            os.environ['MXNET_CUDNN_AUTOTUNE_DEFAULT'] = '0'
-        self.progressbar = options['progressbar']
+            os.environ['MXNET_CUDNN_AUTOTUNE_DEFAULT'] = '1'
+            os.environ['MXNET_BACKWARD_DO_MIRROR'] = '1'
+            ## Mirror mode reduces memory trasferation cost.
+            
+        data = mx.sym.var('data')
+        self.module = mx.mod.Module(symbol=self.model(data),
+                               context=self.gpus,
+                               data_names=['data'],
+                               label_names=['softmax_label'])
+
+        B = data_options['batch_size']
+        C, H, W = data_options['image_shape']
+        self.data_shape = (B, C, H, W)
+        self.label_shape = (B,)
+
+        self.module.bind(data_shapes=zip(['data'], [self.data_shape]),
+                         label_shapes=zip(['softmax_label'], [self.label_shape]))
+                               
+        self.module.init_params(initializer=mx.init.Xavier(magnitude=2.))
             
     def set_optimizer(self, opt_type, opt_conf):
         if opt_type == 'SGD':
             self.opt_type = 'sgd'
             self.lr = opt_conf['lr']
             self.metric = mx.metric.CrossEntropy()
+            self.module.init_optimizer(optimizer=self.opt_type,
+                                       optimizer_params=(('learning_rate', self.lr),))
+            self.metric.reset()
         else:
             raise NotImplementedError
         
@@ -34,48 +57,50 @@ class Trainer(object):
         report = dict()
 
         # setup mxnet module
-        data = mx.sym.var('data')
-        module = mx.mod.Module(symbol=self.model(data),
-                               context=self.gpus,
-                               data_names=['data'],
-                               label_names=['softmax_label'])
-
-        B = iterator.batch_size
-        C, H, W = iterator.image_shape
-        data_shape = (B, C, H, W)
-        label_shape = (B,)
-
         # https://mxnet.incubator.apache.org/tutorials/basic/data.html        
-        module.bind(data_shapes=zip(['data'], [data_shape]),
-                    label_shapes=zip(['softmax_label'], [label_shape]))
-                               
-        module.init_params(initializer=mx.init.Xavier(magnitude=2.))
-        module.init_optimizer(optimizer=self.opt_type,
-                              optimizer_params=(('learning_rate', self.lr),))
-        self.metric.reset()
         ## end setup
-        if self.progressbar:
-            iterator = tqdm(iterator)
         
+        time_series = []
+        start_event = torch.cuda.Event(enable_timing=True)
+        end_event = torch.cuda.Event(enable_timing=True)
+            
         for idx, (x, t) in enumerate(iterator):
-            total_s = time.perf_counter()
-            x = [mx.nd.array(x[i, ...].reshape(1, C, H, W)) for i in range(B)]
-            t = [mx.nd.array([t[i]]) for i in range(B)]
+            if self.time_options == 'total':            
+                start_event.record()
+            x = [mx.nd.array(x)] #[mx.nd.array(x[i, ...].reshape(1, C, H, W)) for i in range(B)]                
+            t = [mx.nd.array(t)] #[mx.nd.array([t[i]]) for i in range(B)]
+                
             batch = mx.io.DataBatch(x, t)
+            if self.time_options == 'forward':
+                with self._record(start_event, end_event):
+                    self.module.forward(batch, is_train=True)                    
+            else:
+                self.module.forward(batch, is_train=True)                
+            
 
-            forward_s = time.perf_counter()           
-            module.forward(batch, is_train=True)
-            forward_e = time.perf_counter()
-            module.update_metric(self.metric, batch.label)
-            backward_s = time.perf_counter()
-            module.backward()
-            backward_e = time.perf_counter()           
-            module.update()
-            total_e = time.perf_counter()
-            report[idx] = dict(
-                forward=forward_e - forward_s,
-                backward=backward_e - backward_s,
-                total=total_e - total_s
+            self.module.update_metric(self.metric, batch.label)
+            if self.time_options == 'backward':
+                with self._record(start_event, end_event):
+                    self.module.backward()
+            else:
+                self.module.backward()
+                    
+            self.module.update()
+
+            if self.time_options == 'total':            
+                end_event.record()
+                torch.cuda.synchronize()
+                self._elapsed_time = start_event.elapsed_time(end_event)/1000
+                
+            if isinstance(iterator, tqdm):
+                iterator.set_description('{:>10s} :{:10.7f}s/it'.format(self.time_options,
+                                                                        self._elapsed_time))            
+            time_series.append(self._elapsed_time)
+        torch.cuda.synchronize()
+        total_e = time.perf_counter()
+        report = dict(
+            time_series=time_series,
+            total=total_e - total_s,
             )
 
         return report

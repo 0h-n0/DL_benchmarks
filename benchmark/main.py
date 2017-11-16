@@ -36,7 +36,8 @@ def config():
         niteration = 1000,
         batch_size = batch_size,
         label_size = 3000,
-        target_type = None
+        target_type = None,
+        random_generation = False, # If this flag is False, iterator returns same array in all iterations.
     )
     progressbar = True
     framework = 'torch'
@@ -80,6 +81,7 @@ def config():
         package_name = 'mxnet'
     elif framework == 'chainer':
         idx = package_name_list.index('chainer')
+        import cupy
     elif framework == 'cntk':
         idx = package_name_list.index('cntk')
     elif framework == 'tensorflow':

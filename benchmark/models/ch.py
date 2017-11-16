@@ -1,17 +1,26 @@
 import time
 import copy
+
+import torch
 import numpy as np
+from tqdm import tqdm 
 import chainer
+from chainer import Chain
+import chainer.links as L
 import chainer.functions as F
 from chainer.function_hooks import TimerHook
-import chainer.links as L
-from chainer import Chain
+
+from benchmark.models.base_trainer import BaseTrainer
 
 
-class Trainer(object):
-    def __init__(self, model, ngpu, options=None):
+class Trainer(BaseTrainer):
+    def __init__(self, model, ngpu, options,
+                 data_options=None, time_options=None):
+        
         self.ngpu = ngpu
         self.gpu_mode = True if ngpu >= 1 else False
+        self.time_options = time_options
+        
         if self.gpu_mode:
             self.model = [copy.deepcopy(model).to_gpu(i) for i in range(ngpu)]
         else:
@@ -36,41 +45,64 @@ class Trainer(object):
         
     def run(self, iterator, mode='train'):
         report = dict()
-        
+        time_series = []
+        start_event = torch.cuda.Event(enable_timing=True)
+        end_event = torch.cuda.Event(enable_timing=True)
         total_s = time.perf_counter()
+        
         for idx, (x, t) in enumerate(iterator):
-            hook = TimerHook()
-            with hook:
-                if self.gpu_mode:
-                    x = x.astype(np.float32)
-                    t = t.astype(np.int32)
-                    minibatch = len(x) // self.ngpu
-                    x = [chainer.Variable(
-                        chainer.cuda.to_gpu(x[j*minibatch:(j+1)*minibatch], j))
+            if self.time_options == 'total':
+                start_event.record()
+            if self.gpu_mode:
+                x = x.astype(np.float32)
+                t = t.astype(np.int32)
+                minibatch = len(x) // self.ngpu
+                x = [chainer.Variable(
+                    chainer.cuda.to_gpu(x[j*minibatch:(j+1)*minibatch], j))
                          for j in range(self.ngpu)]
-                    t = [chainer.Variable(
-                        chainer.cuda.to_gpu(t[j*minibatch:(j+1)*minibatch], j))
+                t = [chainer.Variable(
+                    chainer.cuda.to_gpu(t[j*minibatch:(j+1)*minibatch], j))
                          for j in range(self.ngpu)]
-                else:
-                    x = chainer.Variable(x.astype(np.float32))
-                    t = chainer.Variable(t.astype(np.int64))
-
+            else:
+                x = chainer.Variable(x.astype(np.float32))
+                t = chainer.Variable(t.astype(np.int64))
+            if self.time_options == 'forward':
+                with self._record(start_event, end_event):
+                    o = [_model(_x) for _model, _x in zip(self.model, x)]
+            else:
                 o = [_model(_x) for _model, _x in zip(self.model, x)]
-                loss = [F.softmax_cross_entropy(_o, _t) for _o, _t in zip(o, t)]
-                self.optimizer.target.cleargrads()
-                [_model.cleargrads() for _model in self.model]                        
+                
+            loss = [F.softmax_cross_entropy(_o, _t) for _o, _t in zip(o, t)]
+            self.optimizer.target.cleargrads()
+            [_model.cleargrads() for _model in self.model]
+            
+            if self.time_options == 'backward':
+                with self._record(start_event, end_event):
+                    [(_loss / self.ngpu).backward()
+                     for _model, _loss in zip(self.model, loss)]
+            else:
                 [(_loss / self.ngpu).backward()
                  for _model, _loss in zip(self.model, loss)]
+                
+            [self.model[0].addgrads(_model) for _model in self.model]
+            self.optimizer.update()
+            [_model.copyparams(self.model[0]) for _model in self.model]
             
-                [self.model[0].addgrads(_model) for _model in self.model]
-                self.optimizer.update()
-                [_model.copyparams(self.model[0]) for _model in self.model]
-            print(hook.total_time())
-            hook.print_report()
-
+            if self.time_options == 'total':
+                end_event.record()
+                torch.cuda.synchronize()
+                self._elapsed_time = start_event.elapsed_time(end_event)/1000
+            if isinstance(iterator, tqdm):
+                iterator.set_description('{:>10s} :{:10.7f}s/it'.format(self.time_options,
+                                                                        self._elapsed_time))            
+            time_series.append(self._elapsed_time)
+            
+        torch.cuda.synchronize()
         total_e = time.perf_counter()
-
-        
+        report = dict(
+            time_series=time_series,
+            total=total_e - total_s,
+            )
         return report
 
 

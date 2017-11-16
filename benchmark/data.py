@@ -2,7 +2,7 @@ import numpy as np
 
 class Iterator(object):
     def __init__(self, data_type, image_shape, sequence_shape, niteration,
-    batch_size, label_size, target_type):
+                 batch_size, label_size, target_type, random_generation):
         self.data_type = data_type
         self.image_shape = image_shape
         self.sequence_shape = sequence_shape
@@ -10,8 +10,20 @@ class Iterator(object):
         self.batch_size = batch_size
         self.label_size = label_size
         self.target_type = target_type
+        self.random_generation = random_generation
         self._i = 0
-        
+        if not random_generation:
+            if self.data_type == 'image':
+                ### data dimension = [batch, channel, height, width]
+                dims = np.prod(self.image_shape)
+                data = np.random.random(dims * self.batch_size)
+                self.data = data.reshape(self.batch_size, *self.image_shape)
+                ### target dimension = [batch]
+                self.target = np.random.randint(self.label_size, size=self.batch_size)
+        elif self.data_type == 'sequence':
+            pass
+                
+            
     def __iter__(self):
         return self
     
@@ -19,6 +31,9 @@ class Iterator(object):
         if self._i == self.niteration:
             raise StopIteration()
         self._i += 1
+
+        if not self.random_generation:
+            return (self.data, self.target)
         
         if self.data_type == 'image':
             ### data dimension = [batch, channel, height, width]

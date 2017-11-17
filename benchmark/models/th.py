@@ -11,6 +11,7 @@ from torch.autograd import Variable
 
 from benchmark.models.base_trainer import BaseTrainer
 
+
 class Classifier(nn.Module):
     def __init__(self, model, criterion):
         super(Classifier, self).__init__()
@@ -21,7 +22,6 @@ class Classifier(nn.Module):
         out = self.model(x)
         loss = self.criterion(out, t)
         return loss
-        
         
 
 class Trainer(BaseTrainer):
@@ -39,7 +39,6 @@ class Trainer(BaseTrainer):
         if options['benchmark_mode']:
             torch.backends.cudnn.benchmark = True
 
-
         if options['parallel_loss']:
             self.model = Classifier(self.model, self.criterion)
 
@@ -48,7 +47,7 @@ class Trainer(BaseTrainer):
                 self.model.cuda()
             else:
                 gpus = [i for i in range(self.ngpu)]
-                self.model = torch.nn.DataParallel(model, device_ids=gpus)
+                self.model = torch.nn.DataParallel(self.model, device_ids=gpus)
                 self.model.cuda()
                 
             if self.halfmode:

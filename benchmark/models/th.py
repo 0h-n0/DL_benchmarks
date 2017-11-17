@@ -12,6 +12,18 @@ from torch.autograd import Variable
 from benchmark.models.base_trainer import BaseTrainer
 
 
+class Classifier(nn.Module):
+    def __init__(self, model, criterion):
+        super(Classifier, self).__init__()
+        self.model = model
+        self.criterion = criterion
+
+    def __call__(self, x, t):
+        out = self.model(x)
+        loss = self.criterion(out, t)
+        return loss
+        
+
 class Trainer(BaseTrainer):
     def __init__(self, model, ngpu, options,
                  data_options=None, time_options=None):
@@ -21,17 +33,23 @@ class Trainer(BaseTrainer):
         self.halfmode = options['half']
         self.time_options = time_options
         self._elapsed_time = 0        
+        self.criterion = torch.nn.CrossEntropyLoss().cuda()
+        self.options = options
         
         if options['benchmark_mode']:
             torch.backends.cudnn.benchmark = True
-        
+
+        if options['parallel_loss']:
+            self.model = Classifier(self.model, self.criterion)
+
         if self.gpu_mode:
             if self.ngpu == 1:
                 self.model.cuda()
             else:
                 gpus = [i for i in range(self.ngpu)]
-                self.model = torch.nn.DataParallel(model, device_ids=gpus)
+                self.model = torch.nn.DataParallel(self.model, device_ids=gpus)
                 self.model.cuda()
+                
             if self.halfmode:
                 self.model.half()
 
@@ -53,7 +71,7 @@ class Trainer(BaseTrainer):
 
     def run(self, iterator):
         report = dict()
-        criterion = torch.nn.CrossEntropyLoss().cuda()
+
         time_series = []
         start_event = torch.cuda.Event(enable_timing=True)
         end_event = torch.cuda.Event(enable_timing=True)
@@ -71,13 +89,24 @@ class Trainer(BaseTrainer):
                 if self.halfmode:
                     x = x.half()
             x, t = Variable(x), Variable(t)
+            self.optimizer.zero_grad()            
             if self.time_options == 'forward':
                 with self._record(start_event, end_event):
-                    x = self.model(x)
+                    if self.options['parallel_loss']:
+                        loss = self.model(x, t)
+                    else:
+                        x = self.model(x)
+                        loss = criterion(x, t)
             else:
-                x = self.model(x)                
-            self.optimizer.zero_grad()
-            loss = criterion(x, t)
+                if self.options['parallel_loss']:
+                    loss = self.model(x, t)
+                else:
+                    x = self.model(x)
+                    loss = criterion(x, t)
+                    
+            if self.options['parallel_loss']:
+                loss = loss.mean()
+
             if self.time_options == 'backward':
                 with self._record(start_event, end_event):
                     loss.backward()

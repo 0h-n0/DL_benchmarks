@@ -53,6 +53,7 @@ def config():
         mode='train',
         benchmark_mode=True,
         half=False,
+        parallel_loss=True,
         )
     time_options = 'total'
 

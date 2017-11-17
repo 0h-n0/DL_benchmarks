@@ -6,7 +6,8 @@ ex = sacred.Experiment()
 
 @ex.config
 def config():
-    dl_targets = ['torch', 'chainer', 'mxnet']
+    #dl_targets = ['torch', 'chainer', 'mxnet']
+    dl_targets = ['chainer', 'mxnet']    
     maxgpu = 8
     ngpus = [i for i in range(1, maxgpu+1)]
     batchs = [i for i in range(100, 2000, 100)] + \

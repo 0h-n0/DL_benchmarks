@@ -80,8 +80,10 @@ def config():
         idx = package_name_list.index('mxnet')
         package_name = 'mxnet'
     elif framework == 'chainer':
+        idx = package_name_list.index('cupy')
+        package_name = 'cupy'        
+        package_version = package_version_list[idx]        
         idx = package_name_list.index('chainer')
-        import cupy
     elif framework == 'cntk':
         idx = package_name_list.index('cntk')
     elif framework == 'tensorflow':
@@ -101,12 +103,6 @@ def get_iterator(framework, data_type, data_options, progressbar):
         iterator = tqdm(iterator)
     return iterator
 
-def wrap_tqdm(iterator):
-    from tqdm import tqdm    
-    it = iter(iterator)
-    #for i in range(5):    
-    #    yield next(it) 
-    #yield from tqdm(iterator)
 
 @ex.capture
 def get_model(module, data_type, data_options, dnn_arch, rnn_layers, ngpu):

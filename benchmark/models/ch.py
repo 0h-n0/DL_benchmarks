@@ -26,7 +26,7 @@ class Trainer(BaseTrainer):
         else:
             self.model = model
         if options['benchmark_mode']:            
-            chainer.using_config('cudnn_deterministic', True)
+            chainer.using_config('autotune', True)
             
     def set_optimizer(self, opt_type, opt_conf):
         if opt_type == 'SGD':

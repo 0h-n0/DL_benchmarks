@@ -3,8 +3,4 @@ numpy
 scipy
 tqdm
 sacred
-#mxnet-cu80
-#tensorflow-gpu
-chainer
-#cupy
-#https://cntk.ai/PythonWheel/GPU/cntk-2.2-cp36-cp36m-linux_x86_64.whl
+pycuda

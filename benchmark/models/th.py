@@ -69,7 +69,7 @@ class Trainer(BaseTrainer):
         else:
             raise NotImplementedError
 
-    def run(self, iterator):
+    def run(self, train_iter, test_iter):
         report = dict()
 
         time_series = []
@@ -77,7 +77,7 @@ class Trainer(BaseTrainer):
         end_event = torch.cuda.Event(enable_timing=True)
         
         total_s = time.perf_counter()        
-        for idx, (x, t) in enumerate(iterator):
+        for idx, (x, t) in enumerate(train_iter):
             if self.time_options == 'total':
                 start_event.record()
             x = torch.FloatTensor(x)
@@ -123,6 +123,10 @@ class Trainer(BaseTrainer):
                                                                         self._elapsed_time))            
             time_series.append(self._elapsed_time)
         torch.cuda.synchronize()
+
+        for idx, (x, t) in enumerate(test_iter):
+            pass
+        
         total_e = time.perf_counter()
         report = dict(
             time_series=time_series,

@@ -15,5 +15,5 @@ class BaseTrainer(object):
         torch.cuda.synchronize()
         self._elapsed_time = start_event.elapsed_time(end_event)/1000
 
-    def run(self):
+    def run(self, train_iter, test_iter):
         raise NotImplementedError

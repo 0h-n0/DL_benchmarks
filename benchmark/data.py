@@ -12,17 +12,24 @@ class Iterator(object):
         self.target_type = target_type
         self.random_generation = random_generation
         self._i = 0
-        if not random_generation:
-            if self.data_type == 'image':
+        
+
+        if self.data_type == 'image':
+            if not random_generation:                
                 ### data dimension = [batch, channel, height, width]
                 dims = np.prod(self.image_shape)
                 data = np.random.random(dims * self.batch_size)
                 self.data = data.reshape(self.batch_size, *self.image_shape)
                 ### target dimension = [batch]
-                self.target = np.random.randint(self.label_size, size=self.batch_size)
+                self.target = np.random.randint(self.label_size,
+                                                size=self.batch_size)
+        elif self.data_type == 'mnist':
+            pass
+        elif self.data_type == 'cifer-10':
+            pass
         elif self.data_type == 'sequence':
             pass
-                
+        
             
     def __iter__(self):
         return self

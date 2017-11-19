@@ -23,10 +23,10 @@ def config():
 
     """
     project_root = str(project_root)
-    ngpu = 1 ### ngpu = 0 corresponds to cpu-mode
-    data_type = 'image'
+    ngpu = 1 # ngpu = 0 corresponds to cpu-mode
+    data_type = 'image' # You can choise data-type from this list ['image', 'sequence', 'mnist', 'cifer-10']. 'image' and 'sequence' are dummy data.
 
-    assert data_type in ['image', 'sequence'], \
+    assert data_type in ['image', 'sequence', 'mnist', 'cifer-10'], \
         "Your data_type[{}] is not supported.".format(data_type)
 
     batch_size = 10
@@ -39,6 +39,7 @@ def config():
         target_type = None,
         random_generation = False, # If this flag is False, iterator returns same array in all iterations.
     )
+    
     progressbar = True
     framework = 'torch'
     dnn_arch = 'CNN'
@@ -60,7 +61,7 @@ def config():
     assert time_options in ['total', 'forward', 'backward'], \
         "Your time_options[{}] is not supported.\n".format(dnn_arch) 
     
-    assert dnn_arch in ['CNN', 'DNN', 'RNN', 'LSTM',
+    assert dnn_arch in ['CNN', 'DNN', 'RNN', 'LSTM', 'CapsNet'
                          'BLSTM', 'GRU', 'AlexNet', 'ResNet', 'VGG16'], \
                          "Your dnn_arch[{}] is not supported.\n".format(dnn_arch) 
 
@@ -97,24 +98,51 @@ def config():
     del package_name_list
     del package_version_list
 
+    
 @ex.capture
 def get_iterator(framework, data_type, data_options, progressbar):
-    iterator = Iterator(data_type, **data_options)
+    dtype = data_type.lower()
+    if dtype == 'mnist':
+        from torchvision import datasets
+        # check data.
+        train_iter = datasets.MNIST('../data', train=True, download=True,
+                   transform=transforms.Compose([
+                       transforms.Normalize((0.1307,), (0.3081,))
+                   ]))
+        test_iter = datasets.MNIST('../data', train=False, download=True,
+                   transform=transforms.Compose([
+                       transforms.Normalize((0.1307,), (0.3081,))
+                   ]))
+    elif dtype == 'image':
+        train_iter = Iterator(data_type, **data_options)
+        test_iter = None
     if progressbar:
-        iterator = tqdm(iterator)
-    return iterator
+        train_iter = tqdm(train_iter)
+        test_iter = tqdm(test_iter)        
+    return train_iter, test_iter
 
 
 @ex.capture
 def get_model(module, data_type, data_options, dnn_arch, rnn_layers, ngpu):
-    if data_type == 'image':
+    dtype = data_type.lower()
+    if dtype == 'image':
         channel, xdim, ydim = data_options['image_shape']
         output_num = data_options['label_size']
         gpu_mode = True if ngpu >= 1 else False
         if dnn_arch == 'CNN':
             model = module.CNN(channel, xdim, ydim, output_num)
-    elif data_type == "sequence":
+    elif dtype == 'mnist':
+        channel, xdim, ydim = 1, 28, 28
+        output_num = 10
+        gpu_mode = True if ngpu >= 1 else False
+        if dnn_arch == 'CNN':
+            model = module.CNN(channel, xdim, ydim, output_num)
+
+    elif dtype == 'cifer-10':
+            pass
+    elif dtype == "sequence":
         pass
+    
     return model
 
 
@@ -154,10 +182,10 @@ def get_trainer(_config, framework, framework_version, ngpu):
 
 
 @ex.capture
-def train(trainer, iterator, opt_type, opt_conf):
+def train(trainer, train_iter, test_iter, opt_type, opt_conf):
     np.random.seed(1)
     trainer.set_optimizer(opt_type, opt_conf)            
-    results = trainer.run(iterator)
+    results = trainer.run(train_iter, test_iter)
     dump_results(results=results)
 
 
@@ -184,7 +212,7 @@ def dump_results(_config, _run, results):
 
 @ex.automain
 def main(_run, _config, project_root, framework):
-    iterator = get_iterator()
+    train_iter, test_iter = get_iterator()
     trainer = get_trainer()
     train(trainer=trainer, iterator=iterator)
     dump_config()

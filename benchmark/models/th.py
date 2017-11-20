@@ -73,12 +73,14 @@ class Trainer(BaseTrainer):
         report = dict()
 
         time_series = []
-        start_event = torch.cuda.Event(enable_timing=True)
-        end_event = torch.cuda.Event(enable_timing=True)
+        if self.gpu_mode:
+            start_event = torch.cuda.Event(enable_timing=True)
+            end_event = torch.cuda.Event(enable_timing=True)
         
         total_s = time.perf_counter()        
         for idx, (x, t) in enumerate(train_iter):
-            if self.time_options == 'total':
+            if self.gpu_mode and \
+               self.time_options == 'total':
                 start_event.record()
             x = torch.FloatTensor(x)
             t = torch.LongTensor(t) 
@@ -113,12 +115,13 @@ class Trainer(BaseTrainer):
             else:
                 loss.backward()
             self.optimizer.step()
-            
-            if self.time_options == 'total':
+
+            if self.gpu_mode and \
+               self.time_options == 'total':
                 end_event.record()
                 torch.cuda.synchronize()
                 self._elapsed_time = start_event.elapsed_time(end_event)/1000
-            if isinstance(iterator, tqdm):
+            if isinstance(train_iter, tqdm):
                 iterator.set_description('{:>10s} :{:10.7f}s/it'.format(self.time_options,
                                                                         self._elapsed_time))            
             time_series.append(self._elapsed_time)

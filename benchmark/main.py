@@ -214,5 +214,5 @@ def dump_results(_config, _run, results):
 def main(_run, _config, project_root, framework):
     train_iter, test_iter = get_iterator()
     trainer = get_trainer()
-    train(trainer=trainer, iterator=iterator)
+    train(trainer=trainer, train_iter=train_iter, test_iter=test_iter)
     dump_config()

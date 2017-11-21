@@ -89,7 +89,10 @@ def config():
     elif framework == 'cntk':
         idx = package_name_list.index('cntk')
     elif framework == 'tensorflow':
-        idx = package_name_list.index('tensorflow-gpu')
+        try:
+            idx = package_name_list.index('tensorflow-gpu')
+        except:
+            idx = package_name_list.index('tensorflow')            
         package_name = 'tensorflow-gpu'
     elif framework == 'neon':
         idx = package_name_list.index('neon')

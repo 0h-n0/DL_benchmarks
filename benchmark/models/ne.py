@@ -94,12 +94,8 @@ class CNN(object):
 
 def cnn(x, channel, xdim, ydim, output_num, init_norm):
     layers = [
-        L.Conv((), init=Gaussian(scale=0.01, bias=Constant(0),
+        L.Conv((1, xdim, 3), init=Gaussian(scale=0.01, bias=Constant(0),
                                  activation=Rectlin())),
         
     ]
-    
-    layers.append(L.Affine(nout=100, init=init_norm, activation=Rectlin()))
-    layers.append(Affine(nout=10, init=init_norm, activation=Softmax()))
-    
-    return net
+    return layers

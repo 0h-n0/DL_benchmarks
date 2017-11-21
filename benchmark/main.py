@@ -116,9 +116,11 @@ def get_iterator(framework, data_type, data_options, progressbar):
     elif dtype == 'image':
         train_iter = Iterator(data_type, **data_options)
         test_iter = None
+        
     if progressbar:
         train_iter = tqdm(train_iter)
-        test_iter = tqdm(test_iter)        
+        if test_iter:
+            test_iter = tqdm(test_iter)        
     return train_iter, test_iter
 
 

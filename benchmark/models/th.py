@@ -122,15 +122,16 @@ class Trainer(BaseTrainer):
                 torch.cuda.synchronize()
                 self._elapsed_time = start_event.elapsed_time(end_event)/1000
             if isinstance(train_iter, tqdm):
-                iterator.set_description('{:>10s} :{:10.7f}s/it'.format(self.time_options,
-                                                                        self._elapsed_time))            
+                train_iter.set_description('{:>10s} :{:10.7f}s/it'.format(self.time_options,
+                                                                          self._elapsed_time))
             time_series.append(self._elapsed_time)
         torch.cuda.synchronize()
-
-        for idx, (x, t) in enumerate(test_iter):
-            pass
-        
         total_e = time.perf_counter()
+        
+        if test_iter:
+            for idx, (x, t) in enumerate(test_iter):
+                pass
+        
         report = dict(
             time_series=time_series,
             total=total_e - total_s,

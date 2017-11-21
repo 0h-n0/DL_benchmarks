@@ -17,8 +17,8 @@ git clone --recursive https://github.com/gluon-api/gluon-api.git
 git clone --recursive https://github.com/cupy/cupy.git
 wget http://bitbucket.org/eigen/eigen/get/3.3.4.tar.bz2
 
-conda create --name benchmark pip -y
-source activate benchmark
+#conda create --name benchmark pip -y
+#source activate benchmark
 conda install -y -c anaconda cmake
 conda install -y -c conda-forge bzip2
 conda install -y -c mpi4py openmpi
@@ -39,6 +39,7 @@ pip install protobuf six filelock numpy cython
 #(cd chainer; python setup.py install)
 #(cd cupy; python setup.py install)
 
+(cd neon; make sysinstall)
 #pip install mxnet-cu80==0.11.0
 #pip install tensorflow-gpu
 #pip install https://cntk.ai/PythonWheel/GPU/cntk-2.2-cp36-cp36m-linux_x86_64.whl

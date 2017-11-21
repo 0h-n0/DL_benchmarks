@@ -98,13 +98,13 @@ class Trainer(BaseTrainer):
                         loss = self.model(x, t)
                     else:
                         x = self.model(x)
-                        loss = criterion(x, t)
+                        loss = self.criterion(x, t)
             else:
                 if self.options['parallel_loss']:
                     loss = self.model(x, t)
                 else:
                     x = self.model(x)
-                    loss = criterion(x, t)
+                    loss = self.criterion(x, t)
                     
             if self.options['parallel_loss']:
                 loss = loss.mean()

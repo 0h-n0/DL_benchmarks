@@ -27,7 +27,7 @@ class Trainer(BaseTrainer):
         self.gpu_mode = True if ngpu >= 1 else False
         self.time_options = time_options
         if self.ngpu >= 1:
-            self.be = gen_backend(backend='gpu', batch_size=data_options['batch_size'])
+            self.be = gen_backend(backend='nervanagpu', batch_size=data_options['batch_size'])
         else:
             self.be = gen_backend(backend='mkl', batch_size=data_options['batch_size'])
             
@@ -123,6 +123,7 @@ class CNN(NervanaObject):
     def set_layers(self):
         init_uni = Uniform(low=-0.1, high=0.1)        
         layers = [L.Conv(fshape=(self.channel, self.xdim, 3),
-                         init=init_uni, activation=TF.Rectlin()),]
+                         init=init_uni, activation=TF.Rectlin())]
         layers = L.Sequential(layers)
         layers.propagate_parallelism("Data")
+        self.layers = layers

@@ -83,7 +83,7 @@ class Trainer(BaseTrainer):
                self.time_options == 'total':
                 start_event.record()
             x = torch.FloatTensor(x)
-            t = torch.LongTensor(t) 
+            t = torch.LongTensor(t.tolist())
             if self.gpu_mode:
                 if self.ngpu == 1:
                     x = x.cuda()

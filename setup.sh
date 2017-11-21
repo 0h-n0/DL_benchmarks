@@ -9,6 +9,7 @@ git clone --recursive https://github.com/tiny-dnn/tiny-dnn.git
 git clone --recursive https://github.com/chainer/chainer.git
 git clone --recursive https://github.com/tensorflow/tensorflow.git
 git clone --recursive https://github.com/NervanaSystems/neon.git
+git clone --recursive https://github.com/NervanaSystems/nervanagpu.git
 #git clone --recursive https://github.com/Microsoft/CNTK.git
 git clone --recursive https://github.com/apache/incubator-mxnet.git
 git clone --recursive https://github.com/sony/nnabla.git

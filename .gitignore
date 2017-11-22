@@ -105,8 +105,10 @@ datasets/*
 \#*
 data/*
 results/*
+results*
 *.gz
 !.gitkeep
 \.*
 \*.*
 \*\*.*
+notebooks/*

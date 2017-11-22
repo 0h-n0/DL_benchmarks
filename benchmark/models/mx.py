@@ -2,6 +2,7 @@
 mxnet trainers and models
 """
 import os
+import time
 from functools import partial
 
 import torch
@@ -63,7 +64,7 @@ class Trainer(BaseTrainer):
         time_series = []
         start_event = torch.cuda.Event(enable_timing=True)
         end_event = torch.cuda.Event(enable_timing=True)
-            
+        total_s = time.perf_counter()            
         for idx, (x, t) in enumerate(iterator):
             if self.time_options == 'total':            
                 start_event.record()

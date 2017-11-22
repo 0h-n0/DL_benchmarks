@@ -11,6 +11,8 @@ from neon import NervanaObject
 from neon.backends import gen_backend
 from neon.backends.backend import Tensor, Block
 from neon.models import Model
+from neon.data import ArrayIterator
+
 import neon.layers as L
 import neon.transforms as TF
 from neon.initializers import Uniform, Gaussian, Constant
@@ -22,11 +24,13 @@ class Trainer(BaseTrainer):
     def __init__(self, model, ngpu, options,
                  data_options=None, time_options=None):
         self.model = model
+
         #self.model.set_batch_size(data_options['batch_size'])
         
         self.ngpu = ngpu
         self.gpu_mode = True if ngpu >= 1 else False
         self.time_options = time_options
+        self.data_options = data_options
         if self.gpu_mode:
             try:
                 self.be = gen_backend(backend='nervanagpu',
@@ -40,9 +44,13 @@ class Trainer(BaseTrainer):
             self.be = gen_backend(backend='mkl',
                                   batch_size=data_options['batch_size'])
 
+        self.loss = L.GeneralizedCost(costfunc=TF.CrossEntropyMulti())
         B = self.data_options['batch_size']
+        self.model.bsz(B)
+        
         C, W, H = self.data_options['image_shape']
-        self.model.initialize([B, C, W, H], self.cost)
+            
+        self.model.initialize(((C, H, W), B), self.loss)
             
     def set_optimizer(self, opt_type, opt_conf):
         if opt_type == 'SGD':
@@ -57,7 +65,7 @@ class Trainer(BaseTrainer):
         time_series = []
         start_event = torch.cuda.Event(enable_timing=True)
         end_event = torch.cuda.Event(enable_timing=True)
-        self.loss = L.GeneralizedCost(costfunc=TF.CrossEntropyMulti())
+
         total_s = time.perf_counter()
         
         for idx, (x, t) in enumerate(iterator):
@@ -119,6 +127,11 @@ class CNN(NervanaObject):
         self.output_num = output_num
         self.layers = self.set_layers()
         self.initialized = False
+        # Data Shape:        
+        # http://neon.nervanasys.com/docs/latest/design.html
+
+    def bsz(self, batch_size):
+        self.layers.be.bsz = batch_size
         
     def __call__(self, x, inference=False):
         out = self.layers.fprop(x, inference)
@@ -155,10 +168,10 @@ class CNN(NervanaObject):
     
     def set_layers(self):
         init_uni = Uniform(low=-0.1, high=0.1)        
-        layers = [L.Conv(fshape=(self.channel, self.xdim, 3),
+        layers = [L.Conv(fshape=(self.xdim, 3, self.channel),
                          init=init_uni, activation=TF.Rectlin())]
         layers = L.Sequential(layers)
         layers.propagate_parallelism("Data")
-        
+
         return layers
 

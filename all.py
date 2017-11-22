@@ -6,13 +6,13 @@ ex = sacred.Experiment()
 
 @ex.config
 def config():
-    #dl_targets = ['torch', 'chainer', 'mxnet']
-    dl_targets = ['chainer']    
-    maxgpu = 8
-    ngpus = [i for i in range(8, maxgpu+1)]
+    dl_targets = ['torch', 'chainer', 'mxnet', 'tensorflow']
+    #dl_targets = ['chainer']    
+    maxgpu = 1
+    #ngpus = [i for i in range(8, maxgpu+1)]
+    ngpus = [1]
     batchs = [i for i in range(100, 2000, 100)] + \
-             [i for i in range(2000, 20000, 1000)] + \
-             [i for i in range(20000, 170000, 10000)]
+             [i for i in range(2000, 10000, 1000)]
     max_batch_per_gpu = 18000
 
 @ex.automain

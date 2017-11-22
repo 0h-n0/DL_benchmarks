@@ -79,7 +79,10 @@ def config():
     if framework == 'torch':    
         idx = package_name_list.index('torch')
     elif framework == 'mxnet':
-        idx = package_name_list.index('mxnet')
+        try:
+            idx = package_name_list.index('mxnet-cu80')
+        except:
+            idx = package_name_list.index('mxnet')            
         package_name = 'mxnet'
     elif framework == 'chainer':
         idx = package_name_list.index('cupy')

@@ -96,9 +96,9 @@ def config():
         package_name = 'tensorflow-gpu'
     elif framework == 'neon':
         idx = package_name_list.index('neon')
-        package_name = 'neon'        
+        package_name = 'neon'
     else:
-        raise ValueError            
+        raise ValueError
     framework_version = package_version_list[idx]
 
     del package_name_list
@@ -120,6 +120,8 @@ def get_iterator(framework, data_type, data_options, progressbar):
                        transforms.Normalize((0.1307,), (0.3081,))
                    ]))
     elif dtype == 'image':
+        if framework == 'tensorflow':
+            data_options['target_type'] = 'one-hot'
         train_iter = Iterator(data_type, **data_options)
         test_iter = None
         
@@ -180,7 +182,7 @@ def get_trainer(_config, framework, framework_version, ngpu):
         model = get_model(module=module)        
         trainer = _get_trainer(module=module, model=model)        
     elif framework == 'tensorflow':
-        module = import_module('benchmark.models.th')
+        module = import_module('benchmark.models.tf')
         model = get_model(module=module)
         trainer = _get_trainer(module=module, model=model)
     elif framework == 'neon':

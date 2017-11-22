@@ -13,7 +13,6 @@ class Iterator(object):
         self.random_generation = random_generation
         self._i = 0
         
-
         if self.data_type == 'image':
             if not random_generation:                
                 ### data dimension = [batch, channel, height, width]
@@ -23,6 +22,11 @@ class Iterator(object):
                 ### target dimension = [batch]
                 self.target = np.random.randint(self.label_size,
                                                 size=self.batch_size)
+                if self.target_type == 'one-hot':
+                    target = np.zeros((self.batch_size, self.label_size))
+                    target[np.arange(self.batch_size), self.target] = 1
+                    self.target = target.T
+                    
         elif self.data_type == 'mnist':
             pass
         elif self.data_type == 'cifer-10':
@@ -57,7 +61,6 @@ class Iterator(object):
                 
         elif self.data_type == 'sequence':
             data = np.random.random()
-            
         return (data, target)
 
     def __len__(self):

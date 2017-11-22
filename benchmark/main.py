@@ -89,8 +89,14 @@ def config():
     elif framework == 'cntk':
         idx = package_name_list.index('cntk')
     elif framework == 'tensorflow':
-        idx = package_name_list.index('tensorflow-gpu')
-        package_name = 'tensorflow-gpu'        
+        try:
+            idx = package_name_list.index('tensorflow-gpu')
+        except:
+            idx = package_name_list.index('tensorflow')            
+        package_name = 'tensorflow-gpu'
+    elif framework == 'neon':
+        idx = package_name_list.index('neon')
+        package_name = 'neon'        
     else:
         raise ValueError            
     framework_version = package_version_list[idx]
@@ -116,9 +122,11 @@ def get_iterator(framework, data_type, data_options, progressbar):
     elif dtype == 'image':
         train_iter = Iterator(data_type, **data_options)
         test_iter = None
+        
     if progressbar:
         train_iter = tqdm(train_iter)
-        test_iter = tqdm(test_iter)        
+        if test_iter:
+            test_iter = tqdm(test_iter)        
     return train_iter, test_iter
 
 
@@ -173,6 +181,10 @@ def get_trainer(_config, framework, framework_version, ngpu):
         trainer = _get_trainer(module=module, model=model)        
     elif framework == 'tensorflow':
         module = import_module('benchmark.models.th')
+        model = get_model(module=module)
+        trainer = _get_trainer(module=module, model=model)
+    elif framework == 'neon':
+        module = import_module('benchmark.models.ne')
         model = get_model(module=module)
         trainer = _get_trainer(module=module, model=model)        
     else:

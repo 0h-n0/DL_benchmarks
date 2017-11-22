@@ -1,5 +1,5 @@
 """
-mxnet trainers and models
+nnabla trainers and models
 """
 
 import os

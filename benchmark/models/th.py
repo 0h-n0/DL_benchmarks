@@ -83,7 +83,7 @@ class Trainer(BaseTrainer):
                self.time_options == 'total':
                 start_event.record()
             x = torch.FloatTensor(x)
-            t = torch.LongTensor(t) 
+            t = torch.LongTensor(t.tolist())
             if self.gpu_mode:
                 if self.ngpu == 1:
                     x = x.cuda()
@@ -98,13 +98,13 @@ class Trainer(BaseTrainer):
                         loss = self.model(x, t)
                     else:
                         x = self.model(x)
-                        loss = criterion(x, t)
+                        loss = self.criterion(x, t)
             else:
                 if self.options['parallel_loss']:
                     loss = self.model(x, t)
                 else:
                     x = self.model(x)
-                    loss = criterion(x, t)
+                    loss = self.criterion(x, t)
                     
             if self.options['parallel_loss']:
                 loss = loss.mean()
@@ -122,15 +122,16 @@ class Trainer(BaseTrainer):
                 torch.cuda.synchronize()
                 self._elapsed_time = start_event.elapsed_time(end_event)/1000
             if isinstance(train_iter, tqdm):
-                iterator.set_description('{:>10s} :{:10.7f}s/it'.format(self.time_options,
-                                                                        self._elapsed_time))            
+                train_iter.set_description('{:>10s} :{:10.7f}s/it'.format(self.time_options,
+                                                                          self._elapsed_time))
             time_series.append(self._elapsed_time)
         torch.cuda.synchronize()
-
-        for idx, (x, t) in enumerate(test_iter):
-            pass
-        
         total_e = time.perf_counter()
+        
+        if test_iter:
+            for idx, (x, t) in enumerate(test_iter):
+                pass
+        
         report = dict(
             time_series=time_series,
             total=total_e - total_s,

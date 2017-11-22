@@ -29,7 +29,7 @@ def config():
     assert data_type in ['image', 'sequence', 'mnist', 'cifer-10'], \
         "Your data_type[{}] is not supported.".format(data_type)
 
-    batch_size = 10
+    batch_size = 128
     data_options = dict(
         image_shape = (3, 28, 28), # (channel, witdth, height)
         sequence_shape = 28, # feature
@@ -95,7 +95,10 @@ def config():
             idx = package_name_list.index('tensorflow')            
         package_name = 'tensorflow-gpu'
     elif framework == 'neon':
-        idx = package_name_list.index('neon')
+        try:
+            idx = package_name_list.index('nervananeon')
+        except:
+            idx = package_name_list.index('neon')            
         package_name = 'neon'
     else:
         raise ValueError

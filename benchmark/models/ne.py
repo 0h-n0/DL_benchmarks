@@ -17,19 +17,32 @@ from neon.initializers import Uniform, Gaussian, Constant
 from neon.optimizers import GradientDescentMomentum
 from benchmark.models.base_trainer import BaseTrainer
 
+
 class Trainer(BaseTrainer):
     def __init__(self, model, ngpu, options,
                  data_options=None, time_options=None):
-        self.model = model(0)
-        self.model.set_batch_size(data_options['batch_size'])
+        self.model = model
+        #self.model.set_batch_size(data_options['batch_size'])
         
         self.ngpu = ngpu
         self.gpu_mode = True if ngpu >= 1 else False
         self.time_options = time_options
-        if self.ngpu >= 1:
-            self.be = gen_backend(backend='nervanagpu', batch_size=data_options['batch_size'])
+        if self.gpu_mode:
+            try:
+                self.be = gen_backend(backend='nervanagpu',
+                                      batch_size=data_options['batch_size'])
+                print("Backgrand: nervanagpu")
+            except:
+                self.be = gen_backend(backend='gpu',
+                                      batch_size=data_options['batch_size'])
+                print("Backgrand: gpu")                
         else:
-            self.be = gen_backend(backend='mkl', batch_size=data_options['batch_size'])
+            self.be = gen_backend(backend='mkl',
+                                  batch_size=data_options['batch_size'])
+
+        B = self.data_options['batch_size']
+        C, W, H = self.data_options['image_shape']
+        self.model.initialize([B, C, W, H], self.cost)
             
     def set_optimizer(self, opt_type, opt_conf):
         if opt_type == 'SGD':
@@ -45,7 +58,8 @@ class Trainer(BaseTrainer):
         start_event = torch.cuda.Event(enable_timing=True)
         end_event = torch.cuda.Event(enable_timing=True)
         self.loss = L.GeneralizedCost(costfunc=TF.CrossEntropyMulti())
-        total_s = time.perf_counter()        
+        total_s = time.perf_counter()
+        
         for idx, (x, t) in enumerate(iterator):
             if self.time_options == 'total':            
                 start_event.record()
@@ -93,18 +107,37 @@ class Trainer(BaseTrainer):
 
 
 class CNN(NervanaObject):
+    '''
+    Ref) https://github.com/NervanaSystems/neon/blob/master/neon/models/model.py
+    '''
     def __init__(self, channel, xdim, ydim, output_num):
+        name = CNN
+        super(CNN, self).__init__(name)
         self.channel = channel
         self.xdim = xdim
         self.ydim = ydim
         self.output_num = output_num
         self.layers = self.set_layers()
-
+        self.initialized = False
+        
     def __call__(self, x, inference=False):
         out = self.layers.fprop(x, inference)
         self.be.convert_data(out, False)
         return out
 
+    def initialize(self, dataset, cost=None):
+        if self.initialized:
+            return
+        
+        prev_input = dataset
+        prev_input = self.layers.configure(prev_input)
+        if cost is not None:
+            cost.initialize(prev_input)
+            self.cost = cost        
+        self.layers.allocate()
+        self.layers.allocate_deltas()
+        self.initialized = True        
+    
     @property
     def layers_to_optimize(self):
         return self.layers.layers_to_optimize
@@ -126,4 +159,6 @@ class CNN(NervanaObject):
                          init=init_uni, activation=TF.Rectlin())]
         layers = L.Sequential(layers)
         layers.propagate_parallelism("Data")
-        self.layers = layers
+        
+        return layers
+

@@ -1,6 +1,8 @@
 
 """
 tensorflow trainers and models
+# multi-gpu
+# ref: https://github.com/tensorflow/tensorflow/blob/r0.7/tensorflow/models/image/cifar10/cifar10_multi_gpu_train.py
 """
 import os
 import time

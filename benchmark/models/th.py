@@ -8,6 +8,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.autograd import Variable
+import torchvision
 
 from benchmark.models.base_trainer import BaseTrainer
 
@@ -140,7 +141,6 @@ class Trainer(BaseTrainer):
             total=total_e - total_s,
             )
         return report
-    
             
 class CNN(nn.Module):
     def __init__(self, channel, xdim, ydim, output_num):
@@ -172,4 +172,10 @@ class CNN(nn.Module):
         h = h.view(len(h), -1)
         return self.fc(h)
  
+    
+class ResNet(torchvision.models.resnet.ResNet):
+    def __init__(self, channel, xdim, ydim, output_num):
+        block = torchvision.models.resnet.Bottleneck
+        layers = [3, 4, 6, 3] # ResNet50
+        super(ResNet, self).__init__(block, layers, output_num)
     

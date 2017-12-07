@@ -7,6 +7,7 @@ import numpy as np
 from tqdm import tqdm
 from sacred import Experiment
 from sacred.observers import FileStorageObserver
+import torchvision.datasets
 
 from benchmark.data import Iterator
 
@@ -61,9 +62,9 @@ def config():
     assert time_options in ['total', 'forward', 'backward'], \
         "Your time_options[{}] is not supported.\n".format(dnn_arch) 
     
-    assert dnn_arch in ['CNN', 'DNN', 'RNN', 'LSTM', 'CapsNet'
-                         'BLSTM', 'GRU', 'AlexNet', 'ResNet', 'VGG16'], \
-                         "Your dnn_arch[{}] is not supported.\n".format(dnn_arch) 
+    assert dnn_arch.lower() in ['cnn', 'dnn', 'rnn', 'lstm', 'capsnet'
+                                'blstm', 'gru', 'alexnet', 'resnet', 'vgg16'], \
+                                "Your dnn_arch[{}] is not supported.\n".format(dnn_arch) 
 
     rnn_layers = 4
     framework_version = None
@@ -145,8 +146,10 @@ def get_model(module, data_type, data_options, dnn_arch, rnn_layers, ngpu):
         channel, xdim, ydim = data_options['image_shape']
         output_num = data_options['label_size']
         gpu_mode = True if ngpu >= 1 else False
-        if dnn_arch == 'CNN':
+        if dnn_arch.lower() == 'cnn':
             model = module.CNN(channel, xdim, ydim, output_num)
+        if dnn_arch.lower() == 'resnet':
+            model = module.ResNet(channel, xdim, ydim, output_num)
     elif dtype == 'mnist':
         channel, xdim, ydim = 1, 28, 28
         output_num = 10

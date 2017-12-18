@@ -30,17 +30,9 @@ def config():
     assert data_type in ['image', 'sequence', 'mnist', 'cifer-10'], \
         "Your data_type[{}] is not supported.".format(data_type)
 
-    batch_size = 128
-    data_options = dict(
-        image_shape = (3, 28, 28), # (channel, witdth, height)
-        sequence_shape = 28, # feature
-        niteration = 1000,
-        batch_size = batch_size,
-        label_size = 3000,
-        target_type = None,
-        random_generation = False, # If this flag is False, iterator returns same array in all iterations.
-    )
-    
+    batch_size = 128    
+    image_shape = (3, 28, 28)
+        
     progressbar = True
     framework = 'torch'
     dnn_arch = 'CNN'
@@ -65,6 +57,21 @@ def config():
     assert dnn_arch.lower() in ['cnn', 'dnn', 'rnn', 'lstm', 'capsnet'
                                 'blstm', 'gru', 'alexnet', 'resnet', 'vgg16'], \
                                 "Your dnn_arch[{}] is not supported.\n".format(dnn_arch) 
+
+    if dnn_arch.lower() in ['resnet']:
+        batch_size = 92
+        image_shape = (3, 200, 200)
+
+    data_options = dict(
+        image_shape = image_shape, # (channel, witdth, height)
+        sequence_shape = 28, # feature
+        niteration = 1000,
+        batch_size = batch_size,
+        label_size = 3000,
+        target_type = None,
+        random_generation = False, # If this flag is False, iterator returns same array in all iterations.
+    )
+
 
     rnn_layers = 4
     framework_version = None

@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 from importlib import import_module
-from pip import get_installed_distributions
 
 import numpy as np
 from tqdm import tqdm
@@ -78,14 +77,10 @@ def config():
     assert framework in ['torch', 'mxnet', 'chainer', 'caffe2',
                          'cntk', 'tensorflow', 'dynet', 'nnabla', 'neon'], \
                          "Your framework[{}] is not supported.\n".format(framework)
-    package_name_list = [i.project_name for i in
-                         get_installed_distributions(local_only=True)]
-    package_version_list = [i.version for i in
-                            get_installed_distributions(local_only=True)]
 
     
     if framework == 'torch':    
-        idx = package_name_list.index('torch')
+        idx = 1
     elif framework == 'mxnet':
         try:
             idx = package_name_list.index('mxnet-cu80')
@@ -113,12 +108,7 @@ def config():
         package_name = 'neon'
     else:
         raise ValueError
-    framework_version = package_version_list[idx]
 
-    del package_name_list
-    del package_version_list
-
-    
 @ex.capture
 def get_iterator(framework, data_type, data_options, progressbar):
     dtype = data_type.lower()

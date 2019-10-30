@@ -78,36 +78,6 @@ def config():
                          'cntk', 'tensorflow', 'dynet', 'nnabla', 'neon'], \
                          "Your framework[{}] is not supported.\n".format(framework)
 
-    
-    if framework == 'torch':    
-        idx = 1
-    elif framework == 'mxnet':
-        try:
-            idx = package_name_list.index('mxnet-cu80')
-        except:
-            idx = package_name_list.index('mxnet')            
-        package_name = 'mxnet'
-    elif framework == 'chainer':
-        idx = package_name_list.index('cupy')
-        package_name = 'cupy'        
-        package_version = package_version_list[idx]        
-        idx = package_name_list.index('chainer')
-    elif framework == 'cntk':
-        idx = package_name_list.index('cntk')
-    elif framework == 'tensorflow':
-        try:
-            idx = package_name_list.index('tensorflow-gpu')
-        except:
-            idx = package_name_list.index('tensorflow')            
-        package_name = 'tensorflow-gpu'
-    elif framework == 'neon':
-        try:
-            idx = package_name_list.index('nervananeon')
-        except:
-            idx = package_name_list.index('neon')            
-        package_name = 'neon'
-    else:
-        raise ValueError
 
 @ex.capture
 def get_iterator(framework, data_type, data_options, progressbar):
